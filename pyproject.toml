@@ -31,7 +31,7 @@ dependencies = []
 mem = "cli:entry"
 
 [project.urls]
-Homepage = "https://github.com/mem-ledger/mem-ledger"
+Homepage = "https://github.com/jiongbot-hip/mem-ledger"
 
 [tool.setuptools]
 py-modules = ["cli"]

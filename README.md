@@ -56,7 +56,7 @@ L2  工作记忆  带 TTL 的短期状态，过期重算。
 ## 快速开始
 
 ```bash
-git clone https://github.com/mem-ledger/mem-ledger.git
+git clone https://github.com/jiongbot-hip/mem-ledger.git
 cd mem-ledger
 cp config.example.toml config.toml
 # 改 [paths] 里的路径，改 [importers.docs] 的 dirs 指向你自己的 markdown
