@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mem-ledger"
+version = "1.0.0"
+description = "一个只增不删的主张账本：把散在各处的记忆归一成可检索、可追溯、可裁决的 JSONL"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+keywords = ["memory", "agents", "rag", "retrieval", "llm", "knowledge"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Text Processing :: Indexing",
+]
+# 零第三方依赖是刻意的：这套东西要在断网、容器、老机器上都能起来。
+dependencies = []
+
+[project.optional-dependencies]
+# 没有可选依赖。留这一段是为了说明「真的没有」。
+
+[project.scripts]
+mem = "cli:entry"
+
+[project.urls]
+Homepage = "https://github.com/mem-ledger/mem-ledger"
+
+[tool.setuptools]
+py-modules = ["cli"]
+packages = ["memlib", "memlib.importers"]
+include-package-data = false
+
+[tool.setuptools.package-data]
+memlib = ["_memredact.py"]

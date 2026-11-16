@@ -1,0 +1,135 @@
+# mem-ledger 配置示例
+#
+# 用法：cp config.example.toml config.toml，然后改路径。
+#
+# 为什么缺一项就起不来，而不是给个默认值：
+# 默认值漂了没人会发现，而它影响的是每一次检索。宁可起不来，
+# 也不要悄悄跑在另一套参数上。见 memlib/config.py 开头的 fail closed。
+#
+# 每个数字后面写的「为什么是这个值」是原作者的实测结论，
+# 不是在别的语料上得出的通用最优解。你的语料不一样，改之前先建自己的评测集。
+
+# ---------- 路径 ----------
+#
+# 全部支持 ~ 展开。`ledger` 是目录，其余是文件。
+
+[paths]
+memory_root = "~/memory"
+ledger      = "~/memory/ledger"
+claims      = "~/memory/ledger/claims.jsonl"       # 主张账本（生成物，可重建）
+rules       = "~/memory/ledger/rules.jsonl"        # 规矩库（人写，只追加）
+overrides   = "~/memory/ledger/overrides.jsonl"    # 人的裁决（**不可重建**，要备份）
+proposals   = "~/memory/ledger/proposals.jsonl"    # mem dream 产出的提案（只追加）
+reports     = "~/memory/ledger/reports"            # 冲突报告 / 缺口清单
+evaluation  = "~/memory/eval"                      # 评测集与闸门脚本（可选）
+workspace   = "~/memory"                           # 见下方 redact 一节
+
+# ---------- 导入器 ----------
+#
+# 每个导入器把一种外部来源转成 claim。协议：
+#     NAME = "xxx"
+#     run(cfg) -> (rows: list[dict], stat: dict)
+# 关掉某个就是把 enabled 设成 false，不需要改代码。
+#
+# 本发行版只带 `docs`。要加外部导入器，设 importers.dir，把 .py 丢进去。
+
+[importers]
+# 外部导入器目录（可选）。同名时包内优先。
+# dir = "~/.config/mem-ledger/importers"
+
+[importers.docs]
+enabled = true
+# 收哪些目录下的 *.md。**不整棵树扫**：树里多半混着别人的运行时数据。
+dirs    = ["~/memory/notes"]
+# 单篇也算：适合放根目录的 README 一类。
+files   = []
+# docs 树的根，**只给自测用**：log_pat 里每个前缀要能在这棵树里对上一个文件，
+# 否则就是写错了。2026-11-15 踩过：某个前缀多一个尾随 `-`，258KB 修复流水
+# 因此被当事实导进了账本，而当时没有任何检查会报。
+root    = "~/memory/notes"
+# 永远不进账本的路径片段（子串匹配）。评测集是尺子，不能自己吃掉答案。
+deny    = []
+# 按文件名前缀排除的「过程记录」。
+log_pat = []
+# 文档自己在头部 12 行内出现这个串就排除——改标题也不会漏。
+proc_mark = "> 过程记录"
+# 每块多少字。300 而不是 700：BM25 有长度归一，长段落里埋着一句答案时排不上来；
+# 300 时短段落（尤其表格行）能单独成条。
+chunk = 300
+
+# 本机适配器（系统状态、别的框架的记忆库）不在发行版里。
+# 有的话按运行环境自己启用，每个都要独立的 [importers.<name>] 段。
+# [importers.systemd]
+# enabled = true
+
+# ---------- 检索 ----------
+
+[search]
+k1 = 1.2
+
+# b 是长度归一化强度。原作者的账本长度是双峰的（碎片事实中位 32 token，
+# 策展笔记中位 300 token），答得出问题的往往是后者，所以 b 压到 0.4。
+# 机制上的代价：b 越小越偏向长文档。b=0 时 top1 是超长文档的题数
+# 从 9/58 暴涨到 24/58——那是长条目抢占名额，不是真提升。
+# 改之前先量自己的语料长度分布。
+b = 0.4
+
+# 正文太短的条目进不了索引。注意不能拿 value 单独判：`port 8085` 这种只有 4 个字符。
+min_text = 6
+
+# 重排三权重：相关度 / 证据分 / 新鲜度。必须恰好 3 个数且和为 1.0。
+# 证据分不能压得太低：evidence=user 的 1.0 是手写规矩挤进 top-8 的主要力量。
+rerank = [0.65, 0.25, 0.10]
+
+# 规矩层（layer=rule）加分。规矩库里的条目是同一条规矩的权威版本，
+# 文档里复述它的那一段只是过程记录。没配就是 0。
+rule_boost = 0.0
+
+# 新鲜度：线性衰减到 floor，再久不再掉（旧事实不等于错事实）。
+freshness_days  = 180
+freshness_floor = 0.5
+
+[search.evidence_weight]
+# 证据等级 → 权重。没列的等级按 0.4 算。
+user      = 1.0
+measured  = 0.9
+registry  = 0.7
+extracted = 0.5
+inferred  = 0.3
+
+# ---------- 身份与可见性 ----------
+#
+# visibility 四档：private（只有 agent_id 本人）/ shared（所有 agent）/
+# team:<名>（该组成员）/ global（同 shared，语义留给调用方）。
+# **字段缺失 = 未知 = 拒绝**，这条不是形式主义：规矩投影原来没写这个字段，
+# 加作用域闸门那一刻 41 条规矩会被全部吃掉。
+
+[identity]
+default_visibility   = "shared"    # 存量条目没记录值时的推导值
+new_write_visibility = "private"   # 新写入默认 private，要显式提升，不默认广播
+manual_agent         = "me"        # 人做的裁决记在谁名下
+
+# ---------- 同义词 ----------
+#
+# 写侧：`tokens()` 把中文切成字符二元组，再把这些表层词并到一个规范 token。
+# 中文不切词，所以「交换空间」和「swap」默认是两个 token——要靠这张表。
+#
+# 只加**真的同义**的：错并一次，两类条目从此互相污染，而且再也看不出来。
+# 反例：`图片`/`image` 不并（「图片」在中文里也指照片、截图、图标），
+# `内存`/`memory` 不并（一个是物理内存，一个是记忆）。
+
+[synonyms]
+port    = ["端口", "port"]
+path    = ["路径", "位置", "目录", "path"]
+version = ["版本", "version"]
+
+# ---------- 复核周期（TTL） ----------
+#
+# 按谓词类型定复核周期，到期**只报告**、不改状态。单位是天。
+# 没列的谓词一律不复核（默认不打扰）：只有会随时间自然失效的才该进这张表，
+# 否则每条散文都会被要求复核，等于没有复核。
+
+[ttl]
+meta = { auto_mark = false, derived_origins = [] }
+# path = 30
+# port = 90

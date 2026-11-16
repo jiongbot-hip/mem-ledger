@@ -1,0 +1,31 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # 没有安装步骤：这个项目零第三方依赖，装依赖本身就是一条要验的假设。
+      - name: 端到端测试
+        run: python -m unittest discover -s tests -v
+
+      - name: 内置自检
+        run: |
+          cp config.example.toml config.toml
+          mkdir -p ~/memory/notes ~/memory/ledger
+          printf '# 端口\n\n网关监听 127.0.0.1:18091。\n' > ~/memory/notes/a.md
+          python cli.py build
+          python cli.py self-test

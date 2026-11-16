@@ -1,0 +1,36 @@
+# 本地配置：里面是本机路径，绝对不能提交
+/config.toml
+
+# 账本数据：这是使用者自己的知识库，不是代码
+/memory/
+/ledger/
+/claims.jsonl
+/rules.jsonl
+/overrides.jsonl
+/proposals.jsonl
+/reports/
+*.jsonl
+*.jsonl.tmp
+*.jsonl.*.tmp
+
+# 评测产物
+/pred*.jsonl
+*.pred.jsonl
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+.DS_Store
