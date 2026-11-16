@@ -9,7 +9,8 @@
     store       账本读写、裁决（overrides）、身份标注、缺口与冲突
     report      端口索引、路径体检、冲突报告
     search      检索：门控 → BM25 → 重排 → 注入
-    importers   六个导入器，每个一种来源，注册表在 importers/__init__.py
+    importers   导入器，每个一种来源。**自动发现**：包内模块有 NAME 和 run 就算，
+                外加 [importers] dir 指向的外部目录。没有手写注册表，数量随配置与安装变。
 
 设计原则（与 `00-总则/会话与记忆分层管理办法.md` 一致）：
 
